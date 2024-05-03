@@ -16,16 +16,6 @@ import random
 
 from net import *
 import net as network
-
-data_path = ""
-batch_size = 4
-H = 224
-W = 224
-dataloaders = {
-    'train': DataLoader(dataload(path=r"D:\project_TransUNet\EVIMO\unet_test\train", H=H, W=W, pow_n=10, aug=True), batch_size=batch_size, shuffle=True, num_workers=5),
-    'valid': DataLoader(dataload(path=r"D:\project_TransUNet\EVIMO\unet_test\valid", H=H, W=W, pow_n=10, aug=False), batch_size=batch_size, shuffle=False, num_workers=5)
-}
-
 from collections import defaultdict
 import torch
 import torch.optim as optim
@@ -33,18 +23,25 @@ from torch.optim import lr_scheduler
 import time
 import copy
 
+data_path = "dataset"
+batch_size = 16
+H = 224
+W = 224
+
+Dataloaders = {
+    'train': DataLoader(CustomDataset(path="dataset/train_img", H=H, W=W, pow_n=10, aug=True), batch_size=batch_size, shuffle=True, num_workers=5),
+    'valid': DataLoader(CustomDataset(path="dataset/test_img", H=H, W=W, pow_n=10, aug=False), batch_size=batch_size, shuffle=False, num_workers=5)
+}
 
 def L1_loss(pred, target):
     loss = torch.mean(torch.abs(pred - target))
     metrics['loss'] += loss.data.cpu().numpy() * target.size(0)
     return loss
 
-
 def L2_loss(pred, target):
     loss = torch.mean(torch.pow((pred - target), 2))
     metrics['loss'] += loss.data.cpu().numpy() * target.size(0)
     return loss
-
 
 device_txt = "cuda:1"
 device = torch.device(device_txt if torch.cuda.is_available() else "cpu")
@@ -61,6 +58,7 @@ if __name__ == '__main__':
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 1e10
+
     for epoch in range(num_epochs):
         print('========================' * 10)
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -78,7 +76,7 @@ if __name__ == '__main__':
 
             metrics = defaultdict(float)  # 성능 값 중첩
             epoch_samples = 0
-            pbar = tqdm.tqdm(dataloaders[phase], unit='batch')
+            pbar = tqdm.tqdm(Dataloaders[phase], unit='batch')
             # with tqdm.tqdm(dataloaders['train'], unit='batch', unit_scale=True) as data:
             for inputs, labels in pbar:
                 inputs = inputs.to(device)
